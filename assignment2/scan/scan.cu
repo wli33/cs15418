@@ -71,6 +71,7 @@ void exclusive_scan(int* device_start, int length, int* device_result)
         numThreads = N / twod1;
         numBlocks = (numThreads + THREADS_PER_BLOCK - 1)/ THREADS_PER_BLOCK;
         upsweep<<<numBlocks, THREADES_PER_BLOCK>>>(device_start, length, decive_result, twod, twod1);
+        cudaDeviceSynchronize();
     }
     int zero = 0;
     cudaMemcpy(device_result+(N_1), &zero, sizeof(int), cudaMemcpyHostToDevice);
@@ -81,6 +82,7 @@ void exclusive_scan(int* device_start, int length, int* device_result)
         numThreads = N / twod1;
         numBlocks = (numThreads + THREADS_PER_BLOCK - 1)/ THREADS_PER_BLOCK;
         downsweep<<<numBlocks, THREADES_PER_BLOCK>>>(device_start,length, device_result,twod,twod1);
+        cudaDeviceSynchronize();
     }
 }
 
