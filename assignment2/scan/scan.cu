@@ -13,7 +13,6 @@
 
 extern float toBW(int bytes, float sec);
 
-
 /* Helper function to round up to a power of 2. */
 static inline int nextPow2(int n)
 {
@@ -26,6 +25,7 @@ static inline int nextPow2(int n)
     n++;
     return n;
 }
+
 // upSweep kernel function 
 __global__ void upsweep(int* start, int length, int* result, int twod, int twod1){
     int index = blockIdx.x * blockDim.x + threadIdx.x;
