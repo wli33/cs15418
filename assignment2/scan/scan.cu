@@ -14,8 +14,7 @@
 extern float toBW(int bytes, float sec);
 
 
-/* Helper function to round up to a power of 2. 
- */
+/* Helper function to round up to a power of 2. */
 static inline int nextPow2(int n)
 {
     n--;
@@ -35,14 +34,6 @@ __global__ void upsweep(int* start, int length, int* result, int twod, int twod1
     if(index < length){
         result[index + twod1 -1] += result[index + twod -1];
     }
-}
-__global__ void upSweep(int* start, int length, int* result, int twod, int twod1) {
-  int index = blockIdx.x * blockDim.x + threadIdx.x;
-  index *= twod1; 
-
-  if (index < length && (index % twod1) == 0) {
-    result[index+twod1-1] += result[index+twod-1]; 
-  }
 }
 
 void exclusive_scan(int* device_start, int length, int* device_result)
