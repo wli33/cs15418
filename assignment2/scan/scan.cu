@@ -36,6 +36,18 @@ __global__ void upsweep(int* start, int length, int* result, int twod, int twod1
     }
 }
 
+// downSweep kernel function 
+__global__ void downsweep(int* start, int length, int* result, int twod, int twod1){
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    index *= twod1;
+    
+    if(index <length){
+        int t = result[i+twod-1];// t = L
+         result[i+twod-1] = result[i+twod1-1]; //L = R
+         result[i+twod1-1] += t; //R = L + R
+    }
+}
+
 void exclusive_scan(int* device_start, int length, int* device_result)
 {
     /* Fill in this function with your exclusive scan implementation.
@@ -60,7 +72,16 @@ void exclusive_scan(int* device_start, int length, int* device_result)
         numBlocks = (numThreads + THREADS_PER_BLOCK - 1)/ THREADS_PER_BLOCK;
         upsweep<<<numBlocks, THREADES_PER_BLOCK>>>(device_start, length, decive_result, twod, twod1);
     }
+    int zero = 0;
+    cudaMemcpy(device_result+(N_1), &zero, sizeof(int), cudaMemcpyHostToDevice);
     
+    //downsweep phase
+    for(int twod = N/2; twod >= 1; twod /= 2){
+        int twod1 = twod*2;
+        numThreads = N / twod1;
+        numBlocks = (numThreads + THREADS_PER_BLOCK - 1)/ THREADS_PER_BLOCK;
+        downsweep<<<numBlocks, THREADES_PER_BLOCK>>>(device_start,length, device_result,twod,twod1);
+    }
 }
 
 /* This function is a wrapper around the code you will write - it copies the
