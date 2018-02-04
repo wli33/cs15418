@@ -27,6 +27,23 @@ static inline int nextPow2(int n)
     n++;
     return n;
 }
+// upSweep kernel function 
+__global__ void upsweep(int* start, int length, int* result, int twod, int twod1){
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    index *= twod1;
+    
+    if(index < length){
+        result[index + twod1 -1] += result[index + twod -1];
+    }
+}
+__global__ void upSweep(int* start, int length, int* result, int twod, int twod1) {
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  index *= twod1; 
+
+  if (index < length && (index % twod1) == 0) {
+    result[index+twod1-1] += result[index+twod-1]; 
+  }
+}
 
 void exclusive_scan(int* device_start, int length, int* device_result)
 {
@@ -39,6 +56,20 @@ void exclusive_scan(int* device_start, int length, int* device_result)
      * both the input and the output arrays are sized to accommodate the next
      * power of 2 larger than the input.
      */
+    int N = nextPow2(length);
+    int numThreads;
+    int numBlocks;
+    
+    cudaMemcpy(device_result,device_start, N * sizeof(int), cudaMemcpyDeviveToDevice);
+    
+    //upsweep phase
+    for( int twod = 1; twod < N;twod *= 2){
+        int twod1 =  twod * 2;
+        numThreads = N / twod1;
+        numBlocks = (numThreads + THREADS_PER_BLOCK - 1)/ THREADS_PER_BLOCK;
+        upsweep<<<numBlocks, THREADES_PER_BLOCK>>>(device_start, length, decive_result, twod, twod1);
+    }
+    
 }
 
 /* This function is a wrapper around the code you will write - it copies the
