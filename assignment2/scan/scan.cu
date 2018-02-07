@@ -11,6 +11,8 @@
 
 #include "CycleTimer.h"
 
+#define THREADS_PER_BLOCK 512
+
 extern float toBW(int bytes, float sec);
 
 /* Helper function to round up to a power of 2. */
@@ -157,6 +159,15 @@ double cudaScanThrust(int* inarray, int* end, int* resultarray) {
     double overallDuration = endTime - startTime;
     return overallDuration;
 }
+__global__ void findIndices(int* input, int length, int* output){
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    
+    if(index < length){
+        output[index] = (input[index] == input[index+1]);
+        if(index == length -1) output[index] = 0;
+    }
+}
+
 
 int find_repeats(int *device_input, int length, int *device_output) {
     /* Finds all pairs of adjacent repeated elements in the list, storing the
@@ -169,7 +180,16 @@ int find_repeats(int *device_input, int length, int *device_output) {
      * of 2 in size, so you can use your exclusive_scan function with them if 
      * it requires that. However, you must ensure that the results of
      * find_repeats are correct given the original length.
-     */    
+     */ 
+    int numThreads = length;
+    int numBlocks = (numThreads + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+    int N = nextPow2(length);
+    
+    int* dup_indices;
+    cudaMalloc((void **)&dup_indices, sizeof(int) * N);
+    findIndices<<<numBlocks, THREADS_PER_BLOCK>>>(device_input, length, dup_indices);
+ 
+    
     return 0;
 }
 
