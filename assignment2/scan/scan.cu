@@ -196,7 +196,7 @@ int find_repeats(int *device_input, int length, int *device_output) {
     
     int* d_dup_indices; //indice of dup elements
     int* d_indices; // indices of result array
-    int result; // size of duplicates
+    int h_result; // size of duplicates
     
     cudaMalloc((void **)&d_dup_indices, sizeof(int) * N);
     cudaMalloc((void **)&d_indices, sizeof(int) * N);
@@ -209,12 +209,12 @@ int find_repeats(int *device_input, int length, int *device_output) {
     setIndices<<<numBlocks, THREADS_PER_BLOCK>>>(d_dup_indices, d_indices, device_output, length);
     cudaDeviceSynchronize();
     
-    cudaMemcpy(&result, device_output+(length-1), sizeof(int), cudamemcpyDeviceToHost);
+    cudaMemcpy(&h_result, d_indices+(length-1), sizeof(int), cudamemcpyDeviceToHost);
     
     cudaFree(d_indices);
     cudaFree(d_dup_indices);
     
-    return result;
+    return h_result;
 }
 
 /* Timing wrapper around find_repeats. You should not modify this function.
