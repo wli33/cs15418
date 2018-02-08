@@ -167,7 +167,16 @@ __global__ void findIndices(int* input, int length, int* output){
         if(index == length -1) output[index] = 0;
     }
 }
-
+__global__ void setIndices(int* scan_inputs, int* scan_outputs, int* result, int length){
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    
+    if (index < length -1){
+        if(scan_inputs[index]){
+            int i = scan_outputs[index];
+            result[i]  = index;
+        }
+    }
+}
 
 int find_repeats(int *device_input, int length, int *device_output) {
     /* Finds all pairs of adjacent repeated elements in the list, storing the
@@ -185,12 +194,27 @@ int find_repeats(int *device_input, int length, int *device_output) {
     int numBlocks = (numThreads + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
     int N = nextPow2(length);
     
-    int* dup_indices;
-    cudaMalloc((void **)&dup_indices, sizeof(int) * N);
-    findIndices<<<numBlocks, THREADS_PER_BLOCK>>>(device_input, length, dup_indices);
+    int* d_dup_indices; //indice of dup elements
+    int* d_indices; // indices of result array
+    int* result;
+    
+    cudaMalloc((void **)&d_dup_indices, sizeof(int) * N);
+    cudaMalloc((void **)&d_indices, sizeof(int) * N);
+    
+    findIndices<<<numBlocks, THREADS_PER_BLOCK>>>(device_input, length, d_dup_indices);
     cudaDeviceSynchronize();
     
-    return 0;
+    exclusive_scan(d_dup_indices, length, d_indices);
+    
+    setIndices<<<numBlocks, THREADS_PER_BLOCK>>>(d_dup_indices, d_indices, device_output, length);
+    cudaDeviceSynchronize();
+    
+    cudaMemcpy(result, device_output, sizeof(int) * length, cudamemcpyDeviceToHost);
+    
+    cudaFree(d_indices);
+    cudaFree(d_dup_indices);
+    
+    return *result;
 }
 
 /* Timing wrapper around find_repeats. You should not modify this function.
