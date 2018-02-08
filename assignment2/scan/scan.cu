@@ -188,7 +188,7 @@ int find_repeats(int *device_input, int length, int *device_output) {
     int* dup_indices;
     cudaMalloc((void **)&dup_indices, sizeof(int) * N);
     findIndices<<<numBlocks, THREADS_PER_BLOCK>>>(device_input, length, dup_indices);
- 
+    cudaDeviceSynchronize();
     
     return 0;
 }
