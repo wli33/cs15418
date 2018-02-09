@@ -13,7 +13,12 @@
 #include "noise.h"
 #include "sceneLoader.h"
 #include "util.h"
+#include "exclusiveScan.cu_inl"
+#include "circleBoxTest.cu_inl"
 
+#define NUM_THREADS 1024
+#define NUM_CIRCLES 1024
+#define REGION_WH 32
 ////////////////////////////////////////////////////////////////////////////////////////
 // Putting all the cuda kernels here
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -31,6 +36,7 @@ struct GlobalConstants {
     int imageWidth;
     int imageHeight;
     float* imageData;
+    
 };
 
 // Global variable that is in scope, but read-only, for all cuda
@@ -336,10 +342,12 @@ shadePixel(int circleIndex, float2 pixelCenter, float3 p, float4* imagePtr) {
 
     // there is a non-zero contribution.  Now compute the shading value
 
-    // This conditional is in the inner loop, but it evaluates the
-    // same direction for all threads so it's cost is not so
-    // bad. Attempting to hoist this conditional is not a required
-    // student optimization in Assignment 2
+    // suggestion: This conditional is in the inner loop.  Although it
+    // will evaluate the same for all threads, there is overhead in
+    // setting up the lane masks etc to implement the conditional.  It
+    // would be wise to perform this logic outside of the loop next in
+    // kernelRenderCircles.  (If feeling good about yourself, you
+    // could use some specialized template magic).
     if (cuConstRendererParams.sceneName == SNOWFLAKES || cuConstRendererParams.sceneName == SNOWFLAKES_SINGLE_FRAME) {
 
         const float kCircleMaxAlpha = .5f;
@@ -376,7 +384,6 @@ shadePixel(int circleIndex, float2 pixelCenter, float3 p, float4* imagePtr) {
 
     // END SHOULD-BE-ATOMIC REGION
 }
-
 // kernelRenderCircles -- (CUDA device code)
 //
 // Each thread renders a circle.  Since there is no protection to
