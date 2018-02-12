@@ -81,6 +81,10 @@ void mandelbrotThread(
         args[i].maxIterations = maxIterations;
         args[i].output = output;
     }
+    //2 threads: 1.90x, 1.71x
+    //3 threads: 1.66x, 1.73x
+    //4 threads: 3.30x, 2.71x
+    //4 threads: 3.50x, 3.31x
 
     // Fire up the worker threads.  Note that numThreads-1 pthreads
     // are created and the main app thread is used as a worker as
