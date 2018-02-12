@@ -238,9 +238,50 @@ void clampedExpSerial(float* values, int* exponents, float* output, int N) {
 
 void clampedExpVector(float* values, int* exponents, float* output, int N) {
   // TODO: Implement your vectorized version of clampedExpSerial here
-
+   __cmu418_vec_float x;
+  __cmu418_vec_int y;
+  __cmu418_vec_float result;
+  __cmu418_vec_int count;
+  __cmu418_vec_int zero = _cmu418_vset_int(0);
+  __cmu418_vec_int intOne = _cmu418_vset_int(1);
+  __cmu418_vec_float nine = _cmu418_vset_float(9.999999f);
+  __cmu418_mask mask0, mask1, mask2, countMask;
+  
   for (int i=0; i<N; i+=VECTOR_WIDTH) {
+    mask1 = _cmu418_init_ones(0); // y res - all zeroes
+    mask2 = _cmu418_init_ones(0); // result res
+    
+    //if out of bounds
+    if (i+VECTOR_WIDTH > N) {
+        mask0 = _cmu418_init_ones(N-i);
+    }
+    else {
+        mask0 = _cmu418_init_ones();
+    }
 
+    _cmu418_vload_float(x, values+i, mask0);
+    _cmu418_vload_int(y, exponents+i, mask0);
+    
+    _cmu418_veq_int(mask1, y, zero, mask0);
+    _cmu418_vset_float(result, 1.f, mask1);
+
+    mask1 = _cmu418_mask_not(mask1); //else
+
+    _cmu418_vload_float(result, values+i, mask1);
+    _cmu418_vsub_int(count, y, intOne, mask1);
+    _cmu418_vgt_int(countMask, count, zero, mask0);
+   
+   //loop while countMask not all 0's
+    while (_cmu418_cntbits(countMask) != 0) {
+        _cmu418_vmult_float(result, result, x, countMask);
+        _cmu418_vsub_int(count, count, intOne, countMask);
+        _cmu418_vgt_int(countMask, count, zero, mask0);
+    }
+
+    _cmu418_vgt_float(mask2, result, nine, mask0);
+    _cmu418_vset_float(result, 9.999999f, mask2);
+
+    _cmu418_vstore_float(output+i, result, mask0);
   }
 
 }
